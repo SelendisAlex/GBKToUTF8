@@ -90,3 +90,5 @@ public OnPostJson(Request:id, E_HTTP_STATUS:status, Node:node)
 + The base code of this library is from oscar-broman's [strlib](https://github.com/oscar-broman/strlib).
 > [Southclaws](https://github.com/Southclaws)
 + If it weren't for Southclaws' [requests](https://github.com/Southclaws/pawn-requests), I probably wouldn't have developed this library.
+> [siwode](https://github.com/siwode1)
++ Provided inspiration for the library and thoroughly tested it.

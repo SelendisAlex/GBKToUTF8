@@ -6984,12 +6984,9 @@ static const GbkToUtf[][2]=
 };
 
 //encode
-static stock GbkToUnicode(gbkChar)
-{
-    for (new i = 0; i < MAX_GBKTOUTF_INDEX; i++)
-    {
-        if (GbkToUtf[i][1] == gbkChar)
-        {
+static stock GbkToUnicode(gbkChar) {
+    for (new i = 0; i < MAX_GBKTOUTF_INDEX; i++) {
+        if (GbkToUtf[i][1] == gbkChar) {
             return GbkToUtf[i][0];
         }
     }
@@ -7049,7 +7046,7 @@ stock GbkToUtf8(dest[], const source[], maxlength = sizeof(dest)) {
 
 
 //decode
-static stock UnicodeToGbk(unicodeChar) {
+stock UnicodeToGbk(unicodeChar) {
     for (new i = 0; i < MAX_GBKTOUTF_INDEX; i++) {
         if (GbkToUtf[i][0] == unicodeChar) {
             return GbkToUtf[i][1];
@@ -7058,23 +7055,51 @@ static stock UnicodeToGbk(unicodeChar) {
     return unicodeChar;
 }
 
-stock Utf8ToGbk(dest[], const utf8[], maxlength = sizeof(dest)) {
+stock Utf8ToGbk(dest[], const source[], maxlength = sizeof(dest)) {
     new heap = 0;
-    if (IsOverlapping(dest, maxlength, utf8, -1)) {
+    if (IsOverlapping(dest, maxlength, source, -1)) {
         heap = CopyArgumentToHeap(1);
     }
     
-    new idx = 0, utf8Index = 0;
-    while (utf8[utf8Index] != '\0' && idx < maxlength - 1) {
-        new unicodeChar = Utf8ToUnicode(utf8, utf8Index);
-        new gbkChar = UnicodeToGbk(unicodeChar);
+    new len = strlen(source);
+    new packed = ispacked(source);
+    dest[0] = '\0';
+    
+    new idx = 0, i = 0;
+    while (i < len && idx < maxlength - 1) {
+        new c = packed ? source{i} : source[i];
         
-        if (gbkChar < 0x80) {
-            dest[idx++] = gbkChar;
+        if ((c & 0x80) == 0) {
+            dest[idx++] = c;
+        } else if ((c & 0xE0) == 0xC0) {
+            new c2 = (i + 1 < len) ? (packed ? source{i + 1} : source[i + 1]) : 0;
+            new unicodeChar = ((c & 0x1F) << 6) | (c2 & 0x3F);
+            new gbkChar = UnicodeToGbk(unicodeChar);
+            
+            if (gbkChar < 0x80) {
+                dest[idx++] = gbkChar;
+            } else {
+                dest[idx++] = gbkChar >> 8;
+                dest[idx++] = gbkChar & 0xFF;
+            }
+            i++;
+        } else if ((c & 0xF0) == 0xE0) {
+            new c2 = (i + 1 < len) ? (packed ? source{i + 1} : source[i + 1]) : 0;
+            new c3 = (i + 2 < len) ? (packed ? source{i + 2} : source[i + 2]) : 0;
+            new unicodeChar = ((c & 0x0F) << 12) | ((c2 & 0x3F) << 6) | (c3 & 0x3F);
+            new gbkChar = UnicodeToGbk(unicodeChar);
+            
+            if (gbkChar < 0x80) {
+                dest[idx++] = gbkChar;
+            } else {
+                dest[idx++] = gbkChar >> 8;
+                dest[idx++] = gbkChar & 0xFF;
+            }
+            i += 2;
         } else {
-            dest[idx++] = gbkChar >> 8;
-            dest[idx++] = gbkChar & 0xFF;
+            dest[idx++] = c;
         }
+        i++;
     }
     dest[idx] = '\0';
     
